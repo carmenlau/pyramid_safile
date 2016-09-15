@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class S3FileHandleFactory(FileHandleFactoryBase):
     
     def __init__(self, url, config):
-        self.bucket = url.path
+        self.bucket = url.netloc
         self.access = config['s3.' + self.bucket + '.access']
         self.secret = config['s3.' + self.bucket + '.secret']
         self.conn = tinys3.Connection(self.access, self.secret,
