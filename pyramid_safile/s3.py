@@ -22,8 +22,10 @@ class S3FileHandleFactory(FileHandleFactoryBase):
         self.bucket = url.netloc
         self.access = config['s3.' + self.bucket + '.access']
         self.secret = config['s3.' + self.bucket + '.secret']
+        self.endpoint = config.get(
+            's3.' + self.bucket + '.endpoint', 's3.amazonaws.com')
         self.conn = tinys3.Connection(self.access, self.secret,
-            tls=True, default_bucket=self.bucket)
+            tls=True, default_bucket=self.bucket, endpoint=self.endpoint)
 
     def create_handle(self, original_filename, fp):
         return S3FileHandle(self, original_filename, fp)
