@@ -1,3 +1,4 @@
+import os
 import uuid
 import tempfile
 import logging
@@ -7,6 +8,7 @@ import hashlib
 import hmac
 import time
 from urllib import parse
+from urllib import request
 
 import tinys3
 
@@ -106,13 +108,28 @@ class S3FileHandle(FileHandleBase):
         'uuid/%E6%8A%80%E8%83%BD%E8%AE%AD%E7%BB%83.txt'
         '''
         return "%s/%s" % (self.key, parse.quote(self.filename))
-        
+
     def delete(self):
         return self.factory.delete(self.obj_key)
 
     def tempfile(self):
-        f = tempfile.TemporaryFile()
-        r = self.factory.get(self.obj_key)
+        _, file_extension = os.path.splitext(self.filename)
+        f = tempfile.NamedTemporaryFile(suffix=file_extension)
+        u = request.urlopen(self.url)
+        meta = u.info()
+        file_size = int(meta.get_all("Content-Length")[0])
+        log.debug("Downloading to: %s (%s)" % (f.name, file_size))
+        file_size_dl = 0
+        block_sz = 8192
+        while True:
+            buffer = u.read(block_sz)
+            if not buffer:
+                break
+            file_size_dl += len(buffer)
+            f.write(buffer)
+            status = r"%10d [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+            status = status + chr(8)*(len(status)+1)
+            log.debug(status)
         f.seek(0)
         return f
 
