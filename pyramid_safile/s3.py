@@ -41,6 +41,11 @@ class S3FileHandleFactory(FileHandleFactoryBase):
     def delete(self, *args, **kwargs):
         self.conn.delete(*args, **kwargs)
 
+    def public_url(self, obj_key):
+        filename = obj_key
+        filename = filename.replace('%2F', '/')
+        return 'https://%s.s3.amazonaws.com/%s' % (self.bucket, filename)
+
     def sign_obj(self, obj_key, expires=300):
         # TODO: steping expire for better browser cache
         filename = obj_key
@@ -58,7 +63,7 @@ class S3FileHandleFactory(FileHandleFactoryBase):
             'Signature': self.gen_signature(string_to_sign),
             'response-content-disposition': 'attachment;'
         }
-        return 'http://%s.s3.amazonaws.com/%s?%s' % \
+        return 'https://%s.s3.amazonaws.com/%s?%s' % \
             (self.bucket, filename, parse.urlencode(params))
 
     def gen_signature(self, string_to_sign):
@@ -79,6 +84,7 @@ class S3FileHandle(FileHandleBase):
         self.factory = factory
         self.bucket = factory.bucket
         self.filename = original_filename
+        self.public = bool(kwargs.get('public', False))
         if fp is not None:
             self.key = uuid.uuid4().hex
             if 'folder' in kwargs:
@@ -91,7 +97,7 @@ class S3FileHandle(FileHandleBase):
             content_type = mimetypes.guess_type(original_filename)[0]
             self.factory.upload(
                 self.obj_key, fp,
-                content_type=content_type, public=False)
+                content_type=content_type, public=self.public)
             self._size = self.get_file_size(fp)
             log.debug('File uploaded.')
 
@@ -137,7 +143,8 @@ class S3FileHandle(FileHandleBase):
 
     @property
     def url(self):
-        return self.factory.sign_obj(self.obj_key)
+        return self.factory.public_url(self.obj_key)\
+                if self.public else self.factory.sign_obj(self.obj_key)
 
     @property
     def size(self):
@@ -149,7 +156,8 @@ class S3FileHandle(FileHandleBase):
             'storage': 's3',
             'path': self.key,
             'filename': self.filename,
-            'size': self.size
+            'size': self.size,
+            'public': self.public,
         }
 
     @classmethod
@@ -157,4 +165,6 @@ class S3FileHandle(FileHandleBase):
         self = cls(factory, descriptor['filename'])
         self.key = descriptor['path']
         self._size = descriptor['size']
+        if 'public' in descriptor:
+            self.public = descriptor['public']
         return self
