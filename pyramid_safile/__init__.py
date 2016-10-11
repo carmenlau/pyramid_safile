@@ -64,10 +64,10 @@ class FileHandleFactory(object):
             raise FileHandleError("Storage type is not supported: %s" %
                 name)
 
-    def create_handle(self, original_filename, fp, engine=None):
+    def create_handle(self, original_filename, fp, engine=None, **kwargs):
         if engine is None:
             engine = self.default_engine
-        return engine.create_handle(original_filename, fp)
+        return engine.create_handle(original_filename, fp, **kwargs)
 
     def restore_handle(self, descriptor):
         storage = descriptor['storage']

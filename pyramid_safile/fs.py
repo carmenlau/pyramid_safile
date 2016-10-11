@@ -11,12 +11,12 @@ from .base import FileHandleBase, FileHandleFactoryBase
 log = logging.getLogger(__name__)
 
 class FileSystemHandleFactory(FileHandleFactoryBase):
-    
+
     def __init__(self, url, config):
         self.path = url.path
         self.asset_path = config['fs.' + self.path + '.asset_path']
 
-    def create_handle(self, filename, fp):
+    def create_handle(self, filename, fp, **kwargs):
         return FileSystemHandle(self.path, self.asset_path, filename, fp=fp)
 
     def from_descriptor(self, descriptor):

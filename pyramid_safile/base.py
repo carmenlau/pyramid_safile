@@ -2,7 +2,7 @@ class FileHandleFactoryBase(object):
     def __init__(self, url, config):
         raise NotImplementedError
 
-    def create_handle(self, original_filename, fp):
+    def create_handle(self, original_filename, fp, **kwargs):
         raise NotImplementedError
 
     def from_descriptor(self, descriptor):

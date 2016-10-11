@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class S3FileHandleFactory(FileHandleFactoryBase):
-    
+
     def __init__(self, url, config):
         self.bucket = url.netloc
         self.access = config['s3.' + self.bucket + '.access']
@@ -29,8 +29,8 @@ class S3FileHandleFactory(FileHandleFactoryBase):
         self.conn = tinys3.Connection(self.access, self.secret,
             tls=True, default_bucket=self.bucket, endpoint=self.endpoint)
 
-    def create_handle(self, original_filename, fp):
-        return S3FileHandle(self, original_filename, fp)
+    def create_handle(self, original_filename, fp, **kwargs):
+        return S3FileHandle(self, original_filename, fp, **kwargs)
 
     def from_descriptor(self, descriptor):
         return S3FileHandle.from_descriptor(self, descriptor)
@@ -75,17 +75,19 @@ class S3FileHandle(FileHandleBase):
 
     schema = 's3'
 
-    def __init__(self, factory, original_filename, fp=None):
+    def __init__(self, factory, original_filename, fp=None, **kwargs):
         self.factory = factory
         self.bucket = factory.bucket
         self.filename = original_filename
         if fp is not None:
             self.key = uuid.uuid4().hex
+            if 'folder' in kwargs:
+                self.key = '%s/%s' % (kwargs['folder'], self.key)
             log.debug('Uploading file to S3...')
             log.debug('Original filename: %s' % self.filename)
             log.debug('S3 bucket: %s' % self.bucket)
             log.debug('S3 key: %s' % self.key)
-            # set Content-Type in header 
+            # set Content-Type in header
             content_type = mimetypes.guess_type(original_filename)[0]
             self.factory.upload(
                 self.obj_key, fp,
